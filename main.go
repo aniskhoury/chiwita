@@ -29,56 +29,64 @@ var users = make(map[net.Conn]user)
 var addr = flag.String("addr", "localhost:8080", "http service address")
 var db *sql.DB
 var upgrader = websocket.Upgrader{} // use default options
+func autentificacion(s *websocket.Conn) (bool, estructuras.Usuario) {
+	var nickUsuario string
+	var contrasenaUsuario string
+	var u estructuras.Usuario
+
+	//Obtener el nick y contrasena para autentificar
+	mt, obtenerNickContrasena, err := s.ReadMessage()
+	//mt == 1 es si el tipo de frame es TextMessage
+	//mt == 2 es si el tipo de frame es BinaryMessage
+	if err != nil {
+		log.Print("upgrade:", err)
+		return false, u
+	}
+	if mt == 1 || mt == 2 {
+		fmt.Println(obtenerNickContrasena)
+		fmt.Println(string(obtenerNickContrasena))
+		var result = strings.Split(string(obtenerNickContrasena), " ")
+		nickUsuario = result[0]
+		contrasenaUsuario = result[1]
+		stmt, err := db.Prepare("select * from usuarios where nick = ? and contrasena = ?")
+		filas, err := stmt.Query(nickUsuario, contrasenaUsuario)
+		if err != nil {
+			return false, u
+		}
+
+		for filas.Next() {
+			if err := filas.Scan(&u.Idusuario, &u.Nick, &u.Contrasena, &u.Email, &u.Fecha_registro, &u.Activado); err != nil {
+				fmt.Println("Error autentificacion")
+				return false, u
+			}
+			return true, u
+		}
+
+	}
+	return false, estructuras.Usuario{}
+}
 func echo(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
-	var u estructuras.Usuario
-	//fmt.Printf("%+v\n", users)
-	//fmt.Println(reflect.TypeOf(c))
+
 	if err != nil {
 		log.Print("upgrade:", err)
 		return
 	}
+	//que al final de la ejecución del websocket se ejecute el cierre del websocket
 	defer c.Close()
+	var resulAutentificacion, u = autentificacion(c)
 
-	//Try login with user & password
-	var userClient string
-	var passClient string
-	//Try login with user & password
-	mt, getUserPassword, err := c.ReadMessage()
-	if err != nil {
-		log.Println("read:", err)
-		println("%s", err.Error())
-		return
+	if resulAutentificacion == false {
+		fmt.Println("Error al autentificar")
 	} else {
-		var result = strings.Split(string(getUserPassword), " ")
-		userClient = result[0]
-		passClient = result[1]
-		fmt.Println(userClient, passClient)
-		//if there is no username or password, then stop
-		if userClient == "" || passClient == "" {
-			return
-		} else {
-			stmt, err := db.Prepare("select * from usuarios where nick = ? and contrasena = ?")
-			filas, err := stmt.Query(userClient, passClient)
-			if err != nil {
-				return
-			}
-			var autentificado bool
-
-			autentificado = false
-			for filas.Next() {
-				if err := filas.Scan(&u.Idusuario, &u.Nick, &u.Contrasena, &u.Email, &u.Fecha_registro, &u.Activado); err != nil {
-					fmt.Println("Error autentificacion")
-				}
-				autentificado = true
-			}
-			if autentificado == false {
-				return
-			}
-		}
+		fmt.Println("Autentificacion correcta")
 	}
-	users[c.NetConn()] = user{userClient, true, 0}
 
+	//inicializar el usuario a la hash map
+	//de usuarios global. Para garantizar que solo se accede una vez por hilo
+	//hay que usar mutex
+	users[c.NetConn()] = user{u.Nick, true, 0}
+	fmt.Println(users)
 	for {
 		mt, message, err := c.ReadMessage()
 
@@ -88,8 +96,6 @@ func echo(w http.ResponseWriter, r *http.Request) {
 			// Then we modify the copy
 			entry.contador = entry.contador + 1
 			users[c.NetConn()] = entry
-			//users[c.NetConn()].contador = users[c.NetConn()].contador + 1
-			// Then we reassign map entry
 			mutexUsers.Unlock()
 		}
 
@@ -147,7 +153,9 @@ var homeTemplate = template.Must(template.New("").Parse(`
 <html>
 <head>
 <meta charset="utf-8">
+<script src = "https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.9.0/sha512.min.js"></script>
 <script>  
+
 window.addEventListener("load", function(evt) {
 
     var output = document.getElementById("output");
@@ -170,7 +178,7 @@ window.addEventListener("load", function(evt) {
         ws = new WebSocket("{{.}}");
         ws.onopen = function(evt) {
             print("OPEN");
-            var resultsend =""+userClient.value+" "+passClient.value;
+            var resultsend =""+userClient.value+" "+sha512(passClient.value);
             ws.send(resultsend);
         }
         ws.onclose = function(evt) {
@@ -187,11 +195,13 @@ window.addEventListener("load", function(evt) {
     };
 
     document.getElementById("send").onclick = function(evt) {
-        if (!ws) {
+        var comando = "";
+		if (!ws) {
             return false;
         }
         print("SEND: " + input.value);
-        ws.send(input.value);
+		comando = "MSG introduccion "+input.value;
+        ws.send(comando);
         return false;
     };
 
