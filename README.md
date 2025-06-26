@@ -1,2 +1,2 @@
 # chiwita
-A game community 
+Comunidad de juegos
