@@ -36,8 +36,13 @@ func gestorConexion(w http.ResponseWriter, r *http.Request) {
 	//inicializar el usuario a la hash map
 	//de usuarios global. Para garantizar que solo se accede una vez por hilo
 	//hay que usar mutex
-	global.Usuarios[c.NetConn()] = u
-	fmt.Println(global.Usuarios)
+	global.MutexUsuarios.Lock()
+	global.Usuarios[u.Nick] = c.NetConn()
+	global.MutexUsuarios.Unlock()
+	global.MutexSocketUsuarios.Lock()
+	global.SocketUsuarios[c.NetConn()] = u
+	global.MutexSocketUsuarios.Unlock()
+
 	for {
 		mt, message, err := c.ReadMessage()
 		/*

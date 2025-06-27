@@ -16,7 +16,17 @@ type Usuario struct {
 type AtributosUsuario struct {
 	Conexion           *websocket.Conn
 	Nivel              uint64
-	AntiInunfacion     vector.Vector
-	Canales            vector.Vector
-	PrivilegiosCanales vector.Vector
+	AntiInunfacion     map[string]string
+	Canales            map[string]Canal
+	PrivilegiosCanales map[string]uint64
+}
+
+type Canal struct {
+	Nombre           string
+	Usuarios         vector.Vector
+	ContadorUsuarios uint64
+}
+
+type Canales struct {
+	ListaCanales vector.Vector
 }

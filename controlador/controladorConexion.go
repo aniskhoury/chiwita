@@ -25,8 +25,6 @@ func Autentificacion(s *websocket.Conn, db *sql.DB) (bool, estructuras.Usuario) 
 		return false, u
 	}
 	if mt == 1 || mt == 2 {
-		fmt.Println(obtenerNickContrasena)
-		fmt.Println(string(obtenerNickContrasena))
 		var result = strings.Split(string(obtenerNickContrasena), " ")
 		nickUsuario = result[0]
 		contrasenaUsuario = result[1]
