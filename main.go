@@ -1,7 +1,7 @@
 package main
 
 import (
-	"chiwita/estructuras"
+	"chiwita/controlador"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/go-sql-driver/mysql"
@@ -29,43 +28,8 @@ var users = make(map[net.Conn]user)
 var addr = flag.String("addr", "localhost:8080", "http service address")
 var db *sql.DB
 var upgrader = websocket.Upgrader{} // use default options
-func autentificacion(s *websocket.Conn) (bool, estructuras.Usuario) {
-	var nickUsuario string
-	var contrasenaUsuario string
-	var u estructuras.Usuario
 
-	//Obtener el nick y contrasena para autentificar
-	mt, obtenerNickContrasena, err := s.ReadMessage()
-	//mt == 1 es si el tipo de frame es TextMessage
-	//mt == 2 es si el tipo de frame es BinaryMessage
-	if err != nil {
-		log.Print("upgrade:", err)
-		return false, u
-	}
-	if mt == 1 || mt == 2 {
-		fmt.Println(obtenerNickContrasena)
-		fmt.Println(string(obtenerNickContrasena))
-		var result = strings.Split(string(obtenerNickContrasena), " ")
-		nickUsuario = result[0]
-		contrasenaUsuario = result[1]
-		stmt, err := db.Prepare("select * from usuarios where nick = ? and contrasena = ?")
-		filas, err := stmt.Query(nickUsuario, contrasenaUsuario)
-		if err != nil {
-			return false, u
-		}
-
-		for filas.Next() {
-			if err := filas.Scan(&u.Idusuario, &u.Nick, &u.Contrasena, &u.Email, &u.Fecha_registro, &u.Activado); err != nil {
-				fmt.Println("Error autentificacion")
-				return false, u
-			}
-			return true, u
-		}
-
-	}
-	return false, estructuras.Usuario{}
-}
-func echo(w http.ResponseWriter, r *http.Request) {
+func gestorConexion(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
@@ -74,13 +38,14 @@ func echo(w http.ResponseWriter, r *http.Request) {
 	}
 	//que al final de la ejecución del websocket se ejecute el cierre del websocket
 	defer c.Close()
-	var resulAutentificacion, u = autentificacion(c)
+	var resulAutentificacion, u = controlador.Autentificacion(c, db)
 
 	if resulAutentificacion == false {
 		fmt.Println("Error al autentificar")
-	} else {
-		fmt.Println("Autentificacion correcta")
+		return
 	}
+
+	fmt.Println("Autentificacion correcta")
 
 	//inicializar el usuario a la hash map
 	//de usuarios global. Para garantizar que solo se accede una vez por hilo
@@ -117,7 +82,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
+	homeTemplate.Execute(w, "ws://"+r.Host+"/gestorConexion")
 }
 
 func main() {
@@ -130,7 +95,7 @@ func main() {
 	cfg.Addr = "127.0.0.1:3306"
 	cfg.DBName = "chiwita"
 
-	// Get a database handle.
+	// Obtener el manejador de conexión de la Base de Datos
 	var err error
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
@@ -141,9 +106,9 @@ func main() {
 	if pingErr != nil {
 		log.Fatal(pingErr)
 	}
-	fmt.Println("Connected!")
+	fmt.Println("¡Iniciando Servidor!")
 
-	http.HandleFunc("/echo", echo)
+	http.HandleFunc("/gestorConexion", gestorConexion)
 	http.HandleFunc("/", home)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
@@ -177,12 +142,16 @@ window.addEventListener("load", function(evt) {
         }
         ws = new WebSocket("{{.}}");
         ws.onopen = function(evt) {
-            print("OPEN");
+			/*//////////////////////////////////
+			//   AUTENTIFICACION              //   
+			//   USUARIO + SHA512(CONTRASENA) //
+			//////////////////////////////////*/
+			print("COMUNICACION ABIERTA")
             var resultsend =""+userClient.value+" "+sha512(passClient.value);
             ws.send(resultsend);
         }
         ws.onclose = function(evt) {
-            print("CLOSE");
+            print("COMUNICACION CERRADA");
             ws = null;
         }
         ws.onmessage = function(evt) {
