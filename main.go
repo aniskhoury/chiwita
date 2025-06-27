@@ -2,31 +2,17 @@ package main
 
 import (
 	"chiwita/controlador"
+	"chiwita/global"
 	"database/sql"
-	"flag"
 	"fmt"
 	"html/template"
 	"log"
-	"net"
 	"net/http"
-	"sync"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/websocket"
 )
 
-var mutexUsers sync.Mutex
-
-type user struct {
-	name      string
-	connected bool
-	contador  int
-}
-
-// var users [string]websocket.Conn
-var users = make(map[net.Conn]user)
-var addr = flag.String("addr", "localhost:8080", "http service address")
-var db *sql.DB
 var upgrader = websocket.Upgrader{} // use default options
 
 func gestorConexion(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +24,7 @@ func gestorConexion(w http.ResponseWriter, r *http.Request) {
 	}
 	//que al final de la ejecución del websocket se ejecute el cierre del websocket
 	defer c.Close()
-	var resulAutentificacion, u = controlador.Autentificacion(c, db)
+	var resulAutentificacion, u = controlador.Autentificacion(c, global.Db)
 
 	if resulAutentificacion == false {
 		fmt.Println("Error al autentificar")
@@ -50,26 +36,26 @@ func gestorConexion(w http.ResponseWriter, r *http.Request) {
 	//inicializar el usuario a la hash map
 	//de usuarios global. Para garantizar que solo se accede una vez por hilo
 	//hay que usar mutex
-	users[c.NetConn()] = user{u.Nick, true, 0}
-	fmt.Println(users)
+	global.Usuarios[c.NetConn()] = u
+	fmt.Println(global.Usuarios)
 	for {
 		mt, message, err := c.ReadMessage()
+		/*
+			if entry, ok := global.Usuarios[c.NetConn()]; ok {
 
-		if entry, ok := users[c.NetConn()]; ok {
-
-			mutexUsers.Lock()
-			// Then we modify the copy
-			entry.contador = entry.contador + 1
-			users[c.NetConn()] = entry
-			mutexUsers.Unlock()
-		}
-
+				mutexUsers.Lock()
+				// Then we modify the copy
+				entry.contador = entry.contador + 1
+				users[c.NetConn()] = entry
+				mutexUsers.Unlock()
+			}
+		*/
 		if err != nil {
 			log.Println("read:", err)
 			println("%s", err.Error())
 			break
 		}
-		fmt.Printf("%+v\n", users)
+		fmt.Printf("%+v\n", global.Usuarios)
 
 		log.Printf("recv: %s", message)
 		err = c.WriteMessage(mt, message)
@@ -97,12 +83,14 @@ func main() {
 
 	// Obtener el manejador de conexión de la Base de Datos
 	var err error
-	db, err = sql.Open("mysql", cfg.FormatDSN())
+
+	global.Db, err = sql.Open("mysql", cfg.FormatDSN())
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	pingErr := db.Ping()
+	pingErr := global.Db.Ping()
 	if pingErr != nil {
 		log.Fatal(pingErr)
 	}
@@ -110,7 +98,7 @@ func main() {
 
 	http.HandleFunc("/gestorConexion", gestorConexion)
 	http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	log.Fatal(http.ListenAndServe(*global.Addr, nil))
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
@@ -147,7 +135,7 @@ window.addEventListener("load", function(evt) {
 			//   USUARIO + SHA512(CONTRASENA) //
 			//////////////////////////////////*/
 			print("COMUNICACION ABIERTA")
-            var resultsend =""+userClient.value+" "+sha512(passClient.value);
+            var resultsend =""+usuario.value+" "+sha512(contrasena.value);
             ws.send(resultsend);
         }
         ws.onclose = function(evt) {
@@ -168,8 +156,8 @@ window.addEventListener("load", function(evt) {
 		if (!ws) {
             return false;
         }
-        print("SEND: " + input.value);
-		comando = "MSG introduccion "+input.value;
+        print("SEND: " + texto.value);
+		comando = "MSG introduccion "+texto.value;
         ws.send(comando);
         return false;
     };
@@ -188,16 +176,15 @@ window.addEventListener("load", function(evt) {
 <body>
 <table>
 <tr><td valign="top" width="50%">
-<p>Click "Open" to create a connection to the server, 
-"Send" to send a message to the server and "Close" to close the connection. 
-You can change the message and send multiple times.
+<p>
+Para autentificarte y conectarte a la comunidad, dale a Acceder
 <p>
 <form>
 <button id="open">Open</button>
 <button id="close">Close</button>
-<p><input id="input" type="text" value="Hello world!">
-User<input id="userClient" type="text" value="user1">
-Pass<input id="passClient" type="text" value="pass">
+<p><input id="texto" type="text" value="Texto">
+User<input id="usuario" type="text" value="usuario">
+Pass<input id="contrasena" type="text" value="contrasena">
 <button id="send">Send</button>
 </form>
 </td><td valign="top" width="50%">

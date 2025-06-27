@@ -11,6 +11,7 @@ import (
 )
 
 func Autentificacion(s *websocket.Conn, db *sql.DB) (bool, estructuras.Usuario) {
+
 	var nickUsuario string
 	var contrasenaUsuario string
 	var u estructuras.Usuario
