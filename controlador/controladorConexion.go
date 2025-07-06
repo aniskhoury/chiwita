@@ -2,9 +2,11 @@ package controlador
 
 import (
 	"chiwita/estructuras"
+	"chiwita/global"
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -44,4 +46,62 @@ func Autentificacion(s *websocket.Conn, db *sql.DB) (bool, estructuras.Usuario) 
 
 	}
 	return false, estructuras.Usuario{}
+}
+
+func GestorConexion(w http.ResponseWriter, r *http.Request) {
+	c, err := global.Upgrader.Upgrade(w, r, nil)
+
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	//que al final de la ejecución del websocket se ejecute el cierre del websocket
+	defer c.Close()
+	var resulAutentificacion, u = Autentificacion(c, global.Db)
+
+	if resulAutentificacion == false {
+		fmt.Println("Error al autentificar")
+		return
+	}
+
+	fmt.Println("Autentificacion correcta")
+
+	//inicializar el usuario a la hash map
+	//de usuarios global. Para garantizar que solo se accede una vez por hilo
+	//hay que usar mutex
+	global.MutexUsuarios.Lock()
+	global.Usuarios[u.Nick] = c.NetConn()
+	global.MutexUsuarios.Unlock()
+	global.MutexSocketUsuarios.Lock()
+	global.SocketUsuarios[c.NetConn()] = u
+	global.MutexSocketUsuarios.Unlock()
+	var msgAutentificacion = []byte("AUTENTIFICACION_CORRECTA")
+	c.WriteMessage(1, msgAutentificacion)
+	for {
+		mt, message, err := c.ReadMessage()
+		/*
+			if entry, ok := global.Usuarios[c.NetConn()]; ok {
+
+				mutexUsers.Lock()
+				// Then we modify the copy
+				entry.contador = entry.contador + 1
+				users[c.NetConn()] = entry
+				mutexUsers.Unlock()
+			}
+		*/
+		if err != nil {
+			log.Println("read:", err)
+			println("%s", err.Error())
+			break
+		}
+		fmt.Printf("%+v\n", global.Usuarios)
+
+		log.Printf("recv: %s", message)
+		err = c.WriteMessage(mt, message)
+		if err != nil {
+			log.Println("write:", err)
+			break
+		}
+	}
+	fmt.Println("Desconexio del socket")
 }

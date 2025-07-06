@@ -10,71 +10,7 @@ import (
 	"net/http"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/gorilla/websocket"
 )
-
-var upgrader = websocket.Upgrader{} // use default options
-
-func gestorConexion(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
-
-	if err != nil {
-		log.Print("upgrade:", err)
-		return
-	}
-	//que al final de la ejecución del websocket se ejecute el cierre del websocket
-	defer c.Close()
-	var resulAutentificacion, u = controlador.Autentificacion(c, global.Db)
-
-	if resulAutentificacion == false {
-		fmt.Println("Error al autentificar")
-		return
-	}
-
-	fmt.Println("Autentificacion correcta")
-
-	//inicializar el usuario a la hash map
-	//de usuarios global. Para garantizar que solo se accede una vez por hilo
-	//hay que usar mutex
-	global.MutexUsuarios.Lock()
-	global.Usuarios[u.Nick] = c.NetConn()
-	global.MutexUsuarios.Unlock()
-	global.MutexSocketUsuarios.Lock()
-	global.SocketUsuarios[c.NetConn()] = u
-	global.MutexSocketUsuarios.Unlock()
-
-	for {
-		mt, message, err := c.ReadMessage()
-		/*
-			if entry, ok := global.Usuarios[c.NetConn()]; ok {
-
-				mutexUsers.Lock()
-				// Then we modify the copy
-				entry.contador = entry.contador + 1
-				users[c.NetConn()] = entry
-				mutexUsers.Unlock()
-			}
-		*/
-		if err != nil {
-			log.Println("read:", err)
-			println("%s", err.Error())
-			break
-		}
-		fmt.Printf("%+v\n", global.Usuarios)
-
-		log.Printf("recv: %s", message)
-		err = c.WriteMessage(mt, message)
-		if err != nil {
-			log.Println("write:", err)
-			break
-		}
-	}
-	fmt.Println("Desconexio del socket")
-}
-
-func home(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/gestorConexion")
-}
 
 func main() {
 
@@ -101,9 +37,12 @@ func main() {
 	}
 	fmt.Println("¡Iniciando Servidor!")
 
-	http.HandleFunc("/gestorConexion", gestorConexion)
+	http.HandleFunc("/gestorConexion", controlador.GestorConexion)
 	http.HandleFunc("/", home)
 	log.Fatal(http.ListenAndServe(*global.Addr, nil))
+}
+func home(w http.ResponseWriter, r *http.Request) {
+	homeTemplate.Execute(w, "ws://"+r.Host+"/gestorConexion")
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
@@ -113,27 +52,36 @@ var homeTemplate = template.Must(template.New("").Parse(`
 <meta charset="utf-8">
 <script src = "https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.9.0/sha512.min.js"></script>
 <script>  
-
 window.addEventListener("load", function(evt) {
 
     var output = document.getElementById("output");
     var input = document.getElementById("input");
     var userClient = document.getElementById("userClient");
     var passwordClient = document.getElementById("passClient");
+	var seleccionServidor = document.getElementById("seleccionServidor");
     var ws;
-
+	var estado = 0;
     var print = function(message) {
         var d = document.createElement("div");
         d.textContent = message;
         output.appendChild(d);
         output.scroll(0, output.scrollHeight);
     };
-
+	
     document.getElementById("open").onclick = function(evt) {
         if (ws) {
             return false;
         }
-        ws = new WebSocket("{{.}}");
+		//hace la conexion con el servidor elegido
+		switch(seleccionServidor.value){
+			case "Neptuno":
+				ws = new WebSocket("ws://localhost:8080/gestorConexion");
+				break;
+			default:
+				ws = new WebSocket("ws://localhost:8080/gestorConexion");
+				break;
+		}
+
         ws.onopen = function(evt) {
 			/*//////////////////////////////////
 			//   AUTENTIFICACION              //   
@@ -149,6 +97,9 @@ window.addEventListener("load", function(evt) {
         }
         ws.onmessage = function(evt) {
             print("RESPONSE: " + evt.data);
+			if (evt.data == "AUTENTIFICACION_CORRECTA"){
+				alert("Cargar lista de canales")
+			}
         }
         ws.onerror = function(evt) {
             print("ERROR: " + evt.data);
@@ -190,6 +141,10 @@ Para autentificarte y conectarte a la comunidad, dale a Acceder
 <p><input id="texto" type="text" value="Texto">
 User<input id="usuario" type="text" value="usuario">
 Pass<input id="contrasena" type="text" value="contrasena">
+
+<select id="seleccionServidor">
+  <option value="Neptuno">Neptuno</option>
+</select>
 <button id="send">Send</button>
 </form>
 </td><td valign="top" width="50%">
