@@ -32,9 +32,9 @@ type Canales struct {
 	ListaCanales vector.Vector
 }
 type Servidor struct {
-	IdServidor     uint64
-	NombreServidor string
-	IpServidor     string
+	IdServidor     uint64 `json:"idservidor"`
+	NombreServidor string `json:"nombreservidor"`
+	IpServidor     string `json:"ipservidor"`
 }
 
 type JSONEstructura struct {

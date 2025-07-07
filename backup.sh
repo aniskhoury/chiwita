@@ -1,0 +1,1 @@
+mysqldump -u chiwita -p chiwita > basededatos.sql
