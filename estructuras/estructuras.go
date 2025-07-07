@@ -12,6 +12,7 @@ type Usuario struct {
 	Email          string
 	Fecha_registro string
 	Activado       bool
+	Bot            bool
 }
 type AtributosUsuario struct {
 	Conexion           *websocket.Conn
@@ -29,4 +30,14 @@ type Canal struct {
 
 type Canales struct {
 	ListaCanales vector.Vector
+}
+type Servidor struct {
+	IdServidor     uint64
+	NombreServidor string
+	IpServidor     string
+}
+
+type JSONEstructura struct {
+	Nombre string
+	Valor  string
 }

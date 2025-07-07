@@ -1,6 +1,7 @@
 package main
 
 import (
+	api "chiwita/API"
 	"chiwita/controlador"
 	"chiwita/global"
 	"database/sql"
@@ -14,7 +15,6 @@ import (
 
 func main() {
 
-	// Capture connection properties.
 	cfg := mysql.NewConfig()
 	cfg.User = "chiwita"
 	cfg.Passwd = "chiwita"
@@ -39,6 +39,9 @@ func main() {
 
 	http.HandleFunc("/gestorConexion", controlador.GestorConexion)
 	http.HandleFunc("/", home)
+	http.HandleFunc("/listaServidores", api.ListaServidores)
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(*global.Addr, nil))
 }
 func home(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +54,9 @@ var homeTemplate = template.Must(template.New("").Parse(`
 <head>
 <meta charset="utf-8">
 <script src = "https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.9.0/sha512.min.js"></script>
-<script>  
+
+<link rel="stylesheet" href="estatico/css/css.css">
+ <script type="text/javascript">
 window.addEventListener("load", function(evt) {
 
     var output = document.getElementById("output");
@@ -68,6 +73,10 @@ window.addEventListener("load", function(evt) {
         output.scroll(0, output.scrollHeight);
     };
 	
+
+
+
+
     document.getElementById("open").onclick = function(evt) {
         if (ws) {
             return false;
@@ -98,7 +107,8 @@ window.addEventListener("load", function(evt) {
         ws.onmessage = function(evt) {
             print("RESPONSE: " + evt.data);
 			if (evt.data == "AUTENTIFICACION_CORRECTA"){
-				alert("Cargar lista de canales")
+
+				mostrarCanales.innerHTML = "CARGAR LISTA CANALES";
 			}
         }
         ws.onerror = function(evt) {
@@ -150,6 +160,10 @@ Pass<input id="contrasena" type="text" value="contrasena">
 </td><td valign="top" width="50%">
 <div id="output" style="max-height: 70vh;overflow-y: scroll;"></div>
 </td></tr></table>
+<div id="mostrarCanales">
+</div>
+
 </body>
+
 </html>
 `))

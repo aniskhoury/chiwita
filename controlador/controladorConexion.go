@@ -37,7 +37,7 @@ func Autentificacion(s *websocket.Conn, db *sql.DB) (bool, estructuras.Usuario) 
 		}
 
 		for filas.Next() {
-			if err := filas.Scan(&u.Idusuario, &u.Nick, &u.Contrasena, &u.Email, &u.Fecha_registro, &u.Activado); err != nil {
+			if err := filas.Scan(&u.Idusuario, &u.Nick, &u.Contrasena, &u.Email, &u.Fecha_registro, &u.Activado, &u.Bot); err != nil {
 				fmt.Println("Error autentificacion")
 				return false, u
 			}
