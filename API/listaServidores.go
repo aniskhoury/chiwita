@@ -40,9 +40,7 @@ func ListaServidores(w http.ResponseWriter, r *http.Request) {
 	}
 	b, _ := json.Marshal(parseData)
 	mapa["resultado"] = string(b)
-	//plantillaListaServidores.Execute(w, mapa)
 
-	//plantillaListaServidores.Execute(w, jsonArrayServidores)
 	plantillaListaServidores.Execute(w, mapa)
 
 }

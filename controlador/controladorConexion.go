@@ -37,10 +37,15 @@ func Autentificacion(s *websocket.Conn, db *sql.DB) (bool, estructuras.Usuario) 
 		}
 
 		for filas.Next() {
+			/* Obtención de valores de los usuarios desde la base de datos
+			 */
 			if err := filas.Scan(&u.Idusuario, &u.Nick, &u.Contrasena, &u.Email, &u.Fecha_registro, &u.Activado, &u.Bot); err != nil {
-				fmt.Println("Error autentificacion")
 				return false, u
 			}
+			/*Inicialización de los datos del usuario
+			 */
+			u.Conexion = s
+			u.Canales = make(map[string]string)
 			return true, u
 		}
 
@@ -60,25 +65,22 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 	var resulAutentificacion, u = Autentificacion(c, global.Db)
 
 	if resulAutentificacion == false {
-		fmt.Println("Error al autentificar")
 		return
 	}
 
-	fmt.Println("Autentificacion correcta")
-
-	//inicializar el usuario a la hash map
-	//de usuarios global. Para garantizar que solo se accede una vez por hilo
-	//hay que usar mutex
 	global.MutexUsuarios.Lock()
-	global.Usuarios[u.Nick] = c.NetConn()
+	u.Conexion = c
+	global.Usuarios[u.Nick] = u
+
 	global.MutexUsuarios.Unlock()
-	global.MutexSocketUsuarios.Lock()
-	global.SocketUsuarios[c.NetConn()] = u
-	global.MutexSocketUsuarios.Unlock()
+	/*	global.MutexSocketUsuarios.Lock()
+		global.SocketUsuarios[c.NetConn()] = u
+		global.MutexSocketUsuarios.Unlock()
+	*/
 	var msgAutentificacion = []byte("AUTENTIFICACION_CORRECTA")
 	c.WriteMessage(1, msgAutentificacion)
 	for {
-		mt, message, err := c.ReadMessage()
+		mt, mensaje, err := c.ReadMessage()
 		/*
 			if entry, ok := global.Usuarios[c.NetConn()]; ok {
 
@@ -94,14 +96,140 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 			println("%s", err.Error())
 			break
 		}
-		fmt.Printf("%+v\n", global.Usuarios)
 
-		log.Printf("recv: %s", message)
-		err = c.WriteMessage(mt, message)
+		/*###############################################
+		  ##### Gestión del protocolo de chat-juego #####
+		  ###############################################
+
+		*/
+		var comando = strings.Split(string(mensaje), " ")
+		var mensajeEnviar string
+
+		if len(comando) > 1 {
+			switch comando[0] {
+			case "SALIRCANAL":
+				if len(comando) == 2 {
+					canal, existe := global.Canales[comando[1]]
+					if existe {
+						_, existeUsuarioEnCanal := global.Canales[canal.Nombre].Usuarios[u.Nick]
+						if existeUsuarioEnCanal {
+							delete(global.Canales[canal.Nombre].Usuarios, u.Nick)
+
+							delete(canal.Usuarios, u.Nick)
+							for claveNick, usuario := range global.Canales[comando[1]].Usuarios {
+								mensajeEnviar = fmt.Sprintf("USUARIO_SALE_CANAL %s %s", comando[1], usuario.Nick)
+								canal.Usuarios[claveNick].Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+							}
+						} else {
+							mensajeEnviar = fmt.Sprintf(("ERROR_USUARIO_NO_EXISTE_CANAL"))
+						}
+
+					} else {
+						mensajeEnviar = fmt.Sprintf("ERROR_SALIRCANAL Canal %s no existe", comando[1])
+						u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+					}
+				} else {
+					mensajeEnviar = fmt.Sprintf("ERROR_SALIRCANAL Para salir de un canal envia SALIRCANAL nombredelcanal")
+					u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+				}
+			case "MENSAJECANAL":
+				if len(comando) > 2 {
+					canal, existe := global.Canales[comando[1]]
+
+					if existe {
+						_, existe := canal.Usuarios[u.Nick]
+						if existe {
+							for claveNick, usuario := range canal.Usuarios {
+								if u.Nick != claveNick {
+									mensajeEnviar = fmt.Sprintf("MENSAJECANAL %s %s", comando[1], strings.SplitAfterN(string(mensaje), " ", 3)[2])
+									usuario.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+								}
+							}
+						} else {
+							mensajeEnviar = fmt.Sprintf("ERROR_DEBES_ESTAR_CANAL %s para enviar mensajes", comando[1])
+							u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+						}
+
+					} else {
+						mensajeEnviar = fmt.Sprintf("ERROR_MENSAJECANAL Error canal %s no existe", canal)
+						u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+					}
+				} else {
+					mensajeEnviar = fmt.Sprintf("ERROR_MENSAJECANAL Error al enviar %s", mensaje)
+					u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+				}
+			case "MENSAJEPRIVADO":
+				if len(comando) > 2 {
+					usuario, existe := global.Usuarios[comando[1]]
+					if existe {
+						mensajeEnviar = strings.SplitAfterN(string(mensaje), " ", 3)[2]
+						mensajeEnviar = fmt.Sprintf("MENSAJEPRIVADO %s %s", u.Nick, mensajeEnviar)
+						usuario.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+					} else {
+						mensajeEnviar = fmt.Sprintf("ERROR_Usuario_NOCONECTADO %s", comando[1])
+						u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+					}
+				}
+			case "ENTRARCANAL":
+				/*
+					global.MutexCanales.Lock()
+					var usuariosEnElCanal = global.Canales[comando[1]]
+					usuariosEnElCanal.Usuarios = append(usuariosEnElCanal.Usuarios, u)
+					//enviar mensaje de que el usuario ha entrado a los usuarios del canal
+					for k, v := range usuariosEnElCanal.Usuarios {
+						fmt.Println("Enviando mensaje de que ha entrado usuario %s al canal k", v, k)
+
+					}
+					global.MutexCanales.Unlock()*/
+				canal, ok := global.Canales[comando[1]]
+				if ok {
+					if len(comando) == 2 {
+						var datos = canal.Usuarios
+
+						for nick, usuario := range datos {
+							if u.Nick != nick {
+								mensajeEnviar = fmt.Sprintf("HAENTRADO %s %s", comando[1], u.Nick)
+								usuario.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
+							}
+
+						}
+						canal.Usuarios[u.Nick] = u
+						u.Canales[comando[1]] = comando[1]
+					} else {
+						c.WriteMessage(mt, []byte("Error canal no existe"))
+					}
+				}
+
+			default:
+				c.WriteMessage(mt, []byte("ERROR_COMANDO comando no encontrado"))
+				log.Printf("Error comando no encontrado")
+			}
+		} else {
+			var resultado = "Error tamaño de comando más pequeño que 2"
+			c.WriteMessage(mt, []byte(resultado))
+		}
+
+		/*err = c.WriteMessage(mt, mensaje)
 		if err != nil {
 			log.Println("write:", err)
 			break
-		}
+		}*/
 	}
+	for nombreCanal, _ := range u.Canales {
+		var mensajeEnviar string
+		fmt.Println(nombreCanal)
+		for claveNick, _ := range global.Canales[nombreCanal].Usuarios {
+			if u.Nick != claveNick {
+				mensajeEnviar = fmt.Sprintf("USUARIO_SALE_CANAL %s %s", nombreCanal, u.Nick)
+				global.Usuarios[claveNick].Conexion.WriteMessage(1, []byte(mensajeEnviar))
+			}
+		}
+
+	}
+	for k, _ := range u.Canales {
+		delete(global.Canales[k].Usuarios, u.Nick)
+	}
+	delete(global.Usuarios, u.Nick)
+
 	fmt.Println("Desconexio del socket")
 }

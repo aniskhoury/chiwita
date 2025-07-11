@@ -4,7 +4,6 @@ import (
 	"chiwita/estructuras"
 	"database/sql"
 	"flag"
-	"net"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -14,22 +13,25 @@ import (
  *   HashMap que mapea el Usuario hacia un socket   *
  ***************************************************/
 
-var Usuarios = make(map[string]net.Conn)
+// var Usuarios = make(map[string]net.Conn)
+var Usuarios = make(map[string]estructuras.Usuario)
 var MutexUsuarios sync.Mutex
 
 /****************************************************
  *   HashMap que mapea el Usuario hacia un socket   *
  ***************************************************/
 
-var SocketUsuarios = make(map[net.Conn]estructuras.Usuario)
+/*var SocketUsuarios = make(map[net.Conn]estructuras.Usuario)
 var MutexSocketUsuarios sync.Mutex
-
+*/
 /****************************************************
  *   HashMap que mapea el string de un canal hacia  *
  *              la estructura del canal             *
  ***************************************************/
 
 var Canales = make(map[string]estructuras.Canal)
+
+// var Canales = []estructuras.Canal{}
 var MutexCanales sync.Mutex
 
 var Addr = flag.String("addr", "localhost:8080", "http service address")

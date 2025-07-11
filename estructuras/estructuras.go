@@ -1,8 +1,9 @@
 package estructuras
 
 import (
+	"sync"
+
 	"github.com/gorilla/websocket"
-	"github.com/quartercastle/vector"
 )
 
 type Usuario struct {
@@ -13,9 +14,10 @@ type Usuario struct {
 	Fecha_registro string
 	Activado       bool
 	Bot            bool
+	Conexion       *websocket.Conn
+	Canales        map[string]string
 }
 type AtributosUsuario struct {
-	Conexion           *websocket.Conn
 	Nivel              uint64
 	AntiInunfacion     map[string]string
 	Canales            map[string]Canal
@@ -24,17 +26,15 @@ type AtributosUsuario struct {
 
 type Canal struct {
 	Nombre           string
-	Usuarios         vector.Vector
+	Usuarios         map[string]Usuario
 	ContadorUsuarios uint64
+	MutexCanal       sync.Mutex
 }
 
-type Canales struct {
-	ListaCanales vector.Vector
-}
 type Servidor struct {
-	IdServidor     uint64 `json:"idservidor"`
-	NombreServidor string `json:"nombreservidor"`
-	IpServidor     string `json:"ipservidor"`
+	IdServidor     uint64
+	NombreServidor string
+	IpServidor     string
 }
 
 type JSONEstructura struct {

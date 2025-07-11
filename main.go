@@ -24,7 +24,10 @@ func main() {
 
 	// Obtener el manejador de conexión de la Base de Datos
 	var err error
-
+	/*
+		Inicialización de los vectores de canales
+	*/
+	//global.Canales["principal"].Usuarios = new(estructuras.Usuario)
 	global.Db, err = sql.Open("mysql", cfg.FormatDSN())
 
 	if err != nil {
@@ -36,10 +39,16 @@ func main() {
 		log.Fatal(pingErr)
 	}
 	fmt.Println("¡Iniciando Servidor!")
+	//Cargar canales al servidor
+	_, err = controlador.CargarCanales()
+	if err != nil {
+		log.Printf("Error al cargar los canales")
 
+	}
 	http.HandleFunc("/gestorConexion", controlador.GestorConexion)
 	http.HandleFunc("/", home)
 	http.HandleFunc("/listaServidores", api.ListaServidores)
+	http.HandleFunc("/listaUsuariosCanal", api.ListaUsuariosCanal)
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(*global.Addr, nil))
@@ -123,7 +132,7 @@ window.addEventListener("load", function(evt) {
             return false;
         }
         print("SEND: " + texto.value);
-		comando = "MSG introduccion "+texto.value;
+		comando = texto.value;
         ws.send(comando);
         return false;
     };
