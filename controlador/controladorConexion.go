@@ -1,3 +1,11 @@
+/*
+	    Autor: Anis Khoury Ribas
+		Date creation :12/07/2025
+	    This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+	    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+	    You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
 package controlador
 
 import (
@@ -109,6 +117,7 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 			switch comando[0] {
 			case "SALIRCANAL":
 				if len(comando) == 2 {
+					global.MutexCanales.Lock()
 					canal, existe := global.Canales[comando[1]]
 					if existe {
 						_, existeUsuarioEnCanal := global.Canales[canal.Nombre].Usuarios[u.Nick]
@@ -128,12 +137,14 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 						mensajeEnviar = fmt.Sprintf("ERROR_SALIRCANAL Canal %s no existe", comando[1])
 						u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
 					}
+					global.MutexCanales.Unlock()
 				} else {
 					mensajeEnviar = fmt.Sprintf("ERROR_SALIRCANAL Para salir de un canal envia SALIRCANAL nombredelcanal")
 					u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
 				}
 			case "MENSAJECANAL":
 				if len(comando) > 2 {
+					global.MutexCanales.Lock()
 					canal, existe := global.Canales[comando[1]]
 
 					if existe {
@@ -151,15 +162,17 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 						}
 
 					} else {
-						mensajeEnviar = fmt.Sprintf("ERROR_MENSAJECANAL Error canal %s no existe", canal)
+						mensajeEnviar = fmt.Sprintf("ERROR_MENSAJECANAL Error canal %s no existe", canal.Nombre)
 						u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
 					}
+					global.MutexCanales.Unlock()
 				} else {
 					mensajeEnviar = fmt.Sprintf("ERROR_MENSAJECANAL Error al enviar %s", mensaje)
 					u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
 				}
 			case "MENSAJEPRIVADO":
 				if len(comando) > 2 {
+					global.MutexUsuarios.Lock()
 					usuario, existe := global.Usuarios[comando[1]]
 					if existe {
 						mensajeEnviar = strings.SplitAfterN(string(mensaje), " ", 3)[2]
@@ -169,6 +182,7 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 						mensajeEnviar = fmt.Sprintf("ERROR_Usuario_NOCONECTADO %s", comando[1])
 						u.Conexion.WriteMessage(mt, []byte(mensajeEnviar))
 					}
+					global.MutexUsuarios.Unlock()
 				}
 			case "ENTRARCANAL":
 				/*
@@ -181,6 +195,7 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 
 					}
 					global.MutexCanales.Unlock()*/
+				global.MutexCanales.Lock()
 				canal, ok := global.Canales[comando[1]]
 				if ok {
 					if len(comando) == 2 {
@@ -199,6 +214,7 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 						c.WriteMessage(mt, []byte("Error canal no existe"))
 					}
 				}
+				global.MutexCanales.Unlock()
 
 			default:
 				c.WriteMessage(mt, []byte("ERROR_COMANDO comando no encontrado"))
@@ -217,13 +233,15 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 	}
 	for nombreCanal, _ := range u.Canales {
 		var mensajeEnviar string
-		fmt.Println(nombreCanal)
+		var canal = global.Canales[nombreCanal]
+		canal.MutexCanal.Lock()
 		for claveNick, _ := range global.Canales[nombreCanal].Usuarios {
 			if u.Nick != claveNick {
 				mensajeEnviar = fmt.Sprintf("USUARIO_SALE_CANAL %s %s", nombreCanal, u.Nick)
 				global.Usuarios[claveNick].Conexion.WriteMessage(1, []byte(mensajeEnviar))
 			}
 		}
+		canal.MutexCanal.Unlock()
 
 	}
 	for k, _ := range u.Canales {
