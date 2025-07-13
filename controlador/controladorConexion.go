@@ -123,8 +123,6 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 						_, existeUsuarioEnCanal := global.Canales[canal.Nombre].Usuarios[u.Nick]
 						if existeUsuarioEnCanal {
 							delete(global.Canales[canal.Nombre].Usuarios, u.Nick)
-							var canalUsuario = global.Canales[canal.Nombre]
-							canalUsuario.ContadorUsuarios = canalUsuario.ContadorUsuarios - 1
 							delete(canal.Usuarios, u.Nick)
 							for claveNick, usuario := range global.Canales[comando[1]].Usuarios {
 								mensajeEnviar = fmt.Sprintf("USUARIO_SALE_CANAL %s %s", comando[1], usuario.Nick)
@@ -210,10 +208,6 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 
 						}
 						canal.Usuarios[u.Nick] = u
-						var contador = canal.ContadorUsuarios + 1
-						//global.Canales[comando[1]].ContadorUsuarios = contador
-						canal.ContadorUsuarios = contador
-						fmt.Println("Contador anterior %d ", canal.ContadorUsuarios)
 						u.Canales[comando[1]] = comando[1]
 					} else {
 						c.WriteMessage(mt, []byte("Error canal no existe"))
