@@ -202,6 +202,7 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 				canal, ok := global.Canales[comando[1]]
 				if ok {
 					if len(comando) == 2 {
+
 						var datos = canal.Usuarios
 
 						for nick, usuario := range datos {
@@ -220,6 +221,8 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 					} else {
 						c.WriteMessage(mt, []byte("Error canal no existe"))
 					}
+				} else {
+					c.WriteMessage(mt, []byte("Error canal no existe"))
 				}
 				global.MutexCanales.Unlock()
 
