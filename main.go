@@ -55,6 +55,7 @@ func main() {
 	}
 	http.HandleFunc("/gestorConexion", controlador.GestorConexion)
 	http.HandleFunc("/", home)
+	http.HandleFunc("/listaCanales", api.ListaCanales)
 	http.HandleFunc("/listaServidores", api.ListaServidores)
 	http.HandleFunc("/listaUsuariosCanal", api.ListaUsuariosCanal)
 	fs := http.FileServer(http.Dir("./static"))
