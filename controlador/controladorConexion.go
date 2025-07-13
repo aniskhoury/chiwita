@@ -122,6 +122,10 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 					if existe {
 						_, existeUsuarioEnCanal := global.Canales[canal.Nombre].Usuarios[u.Nick]
 						if existeUsuarioEnCanal {
+							if entrada, ok := global.Canales[canal.Nombre]; ok {
+								entrada.ContadorUsuarios = entrada.ContadorUsuarios - 1
+								global.Canales[canal.Nombre] = entrada
+							}
 							delete(global.Canales[canal.Nombre].Usuarios, u.Nick)
 							delete(canal.Usuarios, u.Nick)
 							for claveNick, usuario := range global.Canales[comando[1]].Usuarios {
@@ -207,6 +211,10 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 							}
 
 						}
+						if entrada, ok := global.Canales[canal.Nombre]; ok {
+							entrada.ContadorUsuarios = entrada.ContadorUsuarios + 1
+							global.Canales[canal.Nombre] = entrada
+						}
 						canal.Usuarios[u.Nick] = u
 						u.Canales[comando[1]] = comando[1]
 					} else {
@@ -243,10 +251,19 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 		canal.MutexCanal.Unlock()
 
 	}
+	global.MutexCanales.Lock()
 	for k, _ := range u.Canales {
+
+		if entrada, ok := global.Canales[k]; ok {
+			entrada.ContadorUsuarios = entrada.ContadorUsuarios - 1
+			global.Canales[k] = entrada
+		}
+
 		delete(global.Canales[k].Usuarios, u.Nick)
 	}
+	global.MutexCanales.Unlock()
+	global.MutexUsuarios.Lock()
 	delete(global.Usuarios, u.Nick)
-
+	global.MutexUsuarios.Unlock()
 	fmt.Println("Desconexio del socket")
 }

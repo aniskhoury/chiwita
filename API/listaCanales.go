@@ -30,14 +30,16 @@ func ListaCanales(w http.ResponseWriter, r *http.Request) {
 	global.MutexCanales.Lock()
 	for clave, _ := range global.Canales {
 		var mapaCanal = make(map[string]interface{})
-
-		var contador = 0
-		for _, _ = range global.Canales[clave].Usuarios {
-			contador = contador + 1
-		}
+		/*
+			var contador = 0
+			for _, _ = range global.Canales[clave].Usuarios {
+				contador = contador + 1
+			}*/
 
 		mapaCanal["canal"] = clave
-		mapaCanal["contadorUsuarios"] = contador
+		//mapaCanal["contadorUsuarios"] = contador
+		mapaCanal["contadorUsuarios"] = global.Canales[clave].ContadorUsuarios
+
 		mapaCanales = append(mapaCanales, mapaCanal)
 	}
 	global.MutexCanales.Unlock()

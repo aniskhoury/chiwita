@@ -24,6 +24,7 @@ func CargarCanales() (bool, error) {
 
 	for filas.Next() {
 		var canal estructuras.Canal
+		canal.ContadorUsuarios = 0
 		if err := filas.Scan(&canal.Nombre); err != nil {
 			return false, errors.New("Error al leer las filas de la Base de Datos al cargar los canales")
 		}
