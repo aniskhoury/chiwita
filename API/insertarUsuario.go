@@ -26,12 +26,9 @@ func InsertarUsuario(w http.ResponseWriter, r *http.Request) {
 	consulta := "INSERT INTO `usuarios` (`nick`, `contrasena`, `email` ) VALUES (?,?,?)"
 	_, err = global.Db.Query(consulta, r.FormValue("nick"), r.FormValue("contrasena"), r.FormValue("email"))
 	if err != nil {
-		mapa["resultado"] = "Error al insertar el usuario 1"
-		msg := fmt.Sprintf("fail : %s", err.Error())
-		fmt.Println(msg)
+		mapa["resultado"] = "Error usuario o email ya registrado"
 	} else {
 		mapa["resultado"] = "USUARIO_INSERTADO_OK"
-
 	}
 
 	plantillaListaServidores.Execute(w, mapa)
