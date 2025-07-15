@@ -85,6 +85,9 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 		global.SocketUsuarios[c.NetConn()] = u
 		global.MutexSocketUsuarios.Unlock()
 	*/
+	global.MutexContadorUsuarios.Lock()
+	global.ContadorUsuarios = global.ContadorUsuarios + 1
+	global.MutexContadorUsuarios.Unlock()
 	var msgAutentificacion = []byte("AUTENTIFICACION_CORRECTA")
 	c.WriteMessage(1, msgAutentificacion)
 	for {
@@ -100,8 +103,6 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 			}
 		*/
 		if err != nil {
-			log.Println("read:", err)
-			println("%s", err.Error())
 			break
 		}
 
@@ -268,5 +269,8 @@ func GestorConexion(w http.ResponseWriter, r *http.Request) {
 	global.MutexUsuarios.Lock()
 	delete(global.Usuarios, u.Nick)
 	global.MutexUsuarios.Unlock()
+	global.MutexContadorUsuarios.Lock()
+	global.ContadorUsuarios = global.ContadorUsuarios - 1
+	global.MutexContadorUsuarios.Unlock()
 	fmt.Println("Desconexio del socket")
 }

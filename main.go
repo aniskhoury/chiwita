@@ -59,6 +59,7 @@ func main() {
 	http.HandleFunc("/listaServidores", api.ListaServidores)
 	http.HandleFunc("/listaUsuariosCanal", api.ListaUsuariosCanal)
 	http.HandleFunc("/insertarUsuario", api.InsertarUsuario)
+	http.HandleFunc("/informacionServidor", api.InformacionServidor)
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(*global.Addr, nil))

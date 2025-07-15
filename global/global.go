@@ -38,9 +38,10 @@ var MutexSocketUsuarios sync.Mutex
  ***************************************************/
 
 var Canales = make(map[string]estructuras.Canal)
-
-// var Canales = []estructuras.Canal{}
 var MutexCanales sync.Mutex
+
+var ContadorUsuarios = 0
+var MutexContadorUsuarios sync.Mutex
 
 var Addr = flag.String("addr", "localhost:8080", "http service address")
 var Db *sql.DB
