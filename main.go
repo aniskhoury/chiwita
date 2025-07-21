@@ -47,11 +47,10 @@ func main() {
 		log.Fatal(pingErr)
 	}
 	fmt.Println("¡Starting server!")
-	//Cargar canales al servidor
-	_, err = controller.CargarCanales()
+	//Load channels
+	_, err = controller.LoadChannels()
 	if err != nil {
 		log.Printf("Error loading channels")
-
 	}
 	http.HandleFunc("/handlerConnection", controller.HandlerConnection)
 	http.HandleFunc("/", home)
