@@ -1,3 +1,7 @@
 go mod init chiwita
 go mod tidy
 go build
+
+
+Para hacer copia de la base de datos:
+mariadb-dump -u chiwita -p chiwita --databases chiwita > basededatos.sql

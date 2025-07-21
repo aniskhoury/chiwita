@@ -10,7 +10,7 @@ package main
 
 import (
 	api "chiwita/API"
-	"chiwita/controlador"
+	"chiwita/controller"
 	"chiwita/global"
 	"database/sql"
 	"fmt"
@@ -46,26 +46,25 @@ func main() {
 	if pingErr != nil {
 		log.Fatal(pingErr)
 	}
-	fmt.Println("¡Iniciando Servidor!")
+	fmt.Println("¡Starting server!")
 	//Cargar canales al servidor
-	_, err = controlador.CargarCanales()
+	_, err = controller.CargarCanales()
 	if err != nil {
-		log.Printf("Error al cargar los canales")
+		log.Printf("Error loading channels")
 
 	}
-	http.HandleFunc("/gestorConexion", controlador.GestorConexion)
+	http.HandleFunc("/handlerConnection", controller.HandlerConnection)
 	http.HandleFunc("/", home)
-	http.HandleFunc("/listaCanales", api.ListaCanales)
-	http.HandleFunc("/listaServidores", api.ListaServidores)
-	http.HandleFunc("/listaUsuariosCanal", api.ListaUsuariosCanal)
-	http.HandleFunc("/insertarUsuario", api.InsertarUsuario)
-	http.HandleFunc("/informacionServidor", api.InformacionServidor)
+	http.HandleFunc("/listChannels", api.ListChannels)
+	http.HandleFunc("/listUsersChannel", api.ListUsersChannel)
+	http.HandleFunc("/insertUser", api.InsertUser)
+	http.HandleFunc("/informationServer", api.InformationServer)
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	log.Fatal(http.ListenAndServe(*global.Addr, nil))
 }
 func home(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/gestorConexion")
+	homeTemplate.Execute(w, "ws://"+r.Host+"/handlerConnection")
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
@@ -104,10 +103,10 @@ window.addEventListener("load", function(evt) {
 		//hace la conexion con el servidor elegido
 		switch(seleccionServidor.value){
 			case "Neptuno":
-				ws = new WebSocket("ws://localhost:8080/gestorConexion");
+				ws = new WebSocket("ws://localhost:8080/handlerConnection");
 				break;
 			default:
-				ws = new WebSocket("ws://localhost:8080/gestorConexion");
+				ws = new WebSocket("ws://localhost:8080/handlerConnection");
 				break;
 		}
 
@@ -116,19 +115,19 @@ window.addEventListener("load", function(evt) {
 			//   AUTENTIFICACION              //   
 			//   USUARIO + SHA512(CONTRASENA) //
 			//////////////////////////////////*/
-			print("COMUNICACION ABIERTA")
+			print("OPEN_COMMUNICATION")
             var resultsend =""+usuario.value+" "+sha512(contrasena.value);
             ws.send(resultsend);
         }
         ws.onclose = function(evt) {
-            print("COMUNICACION CERRADA");
+            print("CLOSED COMMUNICATION");         
             ws = null;
         }
         ws.onmessage = function(evt) {
             print("RESPONSE: " + evt.data);
-			if (evt.data == "AUTENTIFICACION_CORRECTA"){
+			if (evt.data == "SUCCESSFUL_AUTHENTIFICATION"){
 
-				mostrarCanales.innerHTML = "CARGAR LISTA CANALES";
+				mostrarCanales.innerHTML = "LOAD CHANNEL LIST";
 			}
         }
         ws.onerror = function(evt) {
