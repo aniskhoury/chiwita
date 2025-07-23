@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
 )
 
 func ListChannels(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +41,8 @@ func ListChannels(w http.ResponseWriter, r *http.Request) {
 	global.MutexChannels.Unlock()
 	b, _ := json.Marshal(mapChannels)
 	mapResult["result"] = string(b)
-
+	mapResult["result"] = strings.Replace(string(b), "&#34;", "'", 0)
+	fmt.Println(mapResult["result"])
 	templateListChannels.Execute(w, mapResult)
 
 }

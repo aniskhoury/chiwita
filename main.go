@@ -70,11 +70,32 @@ var homeTemplate = template.Must(template.New("").Parse(`
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+body{
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+#showChannels{
+	background-color:yellow;
+	height: 100%;
+	width: 100%;
+	bottom: 10;
+	right: 10;
+	position:fixed;
+}
+</style>
 <meta charset="utf-8">
 <script src = "https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.9.0/sha512.min.js"></script>
 
-<link rel="stylesheet" href="estatico/css/css.css">
+<link rel="stylesheet" href="static/css/css.css">
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="/static/js/channels.js"></script>
  <script type="text/javascript">
+
+
+
+
 window.addEventListener("load", function(evt) {
 
     var output = document.getElementById("output");
@@ -91,7 +112,6 @@ window.addEventListener("load", function(evt) {
         output.scroll(0, output.scrollHeight);
     };
 	
-
 
 
 
@@ -126,7 +146,24 @@ window.addEventListener("load", function(evt) {
             print("RESPONSE: " + evt.data);
 			if (evt.data == "SUCCESSFUL_AUTHENTIFICATION"){
 
-				mostrarCanales.innerHTML = "LOAD CHANNEL LIST";
+				var showChannels = document.createElement("div");
+				showChannels.setAttribute("id","showChannels");
+				showChannels.setAttribute("class","showChannels");
+
+
+
+				document.getElementById("content").appendChild(showChannels);
+				var tabs = document.createElement("div");
+				tabs.setAttribute("id","tabs");
+				tabs.setAttribute("class","tabs");
+				tabs.innerHTML = '<button onclick="showListChannels()">List of Channels</button>';
+				
+
+
+
+
+
+				document.getElementById("showChannels").appendChild(tabs);
 			}
         }
         ws.onerror = function(evt) {
@@ -159,26 +196,27 @@ window.addEventListener("load", function(evt) {
 </head>
 <body>
 <table>
-<tr><td valign="top" width="50%">
-<p>
-Para autentificarte y conectarte a la comunidad, dale a Acceder
-<p>
-<form>
-<button id="open">Open</button>
-<button id="close">Close</button>
-<p><input id="texto" type="text" value="Texto">
-User<input id="usuario" type="text" value="usuario">
-Pass<input id="contrasena" type="text" value="contrasena">
+	<tr><td valign="top" width="50%">
+	<p>
+	Para autentificarte y conectarte a la comunidad, dale a Acceder
+	<p>
+	<form>
+	<button id="open">Open</button>
+	<button id="close">Close</button>
+	<p><input id="texto" type="text" value="Texto">
+	User<input id="usuario" type="text" value="usuario">
+	Pass<input id="contrasena" type="text" value="contrasena">
 
-<select id="seleccionServidor">
-  <option value="Neptuno">Neptuno</option>
-</select>
-<button id="send">Send</button>
-</form>
-</td><td valign="top" width="50%">
-<div id="output" style="max-height: 70vh;overflow-y: scroll;"></div>
-</td></tr></table>
-<div id="mostrarCanales">
+	<select id="seleccionServidor">
+	<option value="Neptuno">Neptuno</option>
+	</select>
+	<button id="send">Send</button>
+	</form>
+	</td><td valign="top" width="50%">
+	<div id="output" style="max-height: 70vh;overflow-y: scroll;"></div>
+	</td></tr>
+</table>
+<div id="content">
 </div>
 
 </body>

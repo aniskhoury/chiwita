@@ -1,2 +1,2 @@
-mysqldump -u chiwita -p --no-data chiwita > basededatos.sql
-mariadb -u chiwita -p < basededatos.sql
+mysqldump -u chiwita -p --no-data chiwita > database.sql
+mariadb -u chiwita -p < database.sql
