@@ -76,6 +76,11 @@ body{
   width: 100%;
   margin: 0;
 }
+#channels {
+	width:100%;
+	height: 100%;
+	background-color:brown;
+}
 #showChannels{
 	background-color:yellow;
 	height: 100%;
@@ -83,6 +88,54 @@ body{
 	bottom: 10;
 	right: 10;
 	position:fixed;
+}
+
+/* Style the tab */
+.tab {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+/* Style the close button */
+.topright {
+  float: right;
+  cursor: pointer;
+  font-size: 28px;
+}
+
+.topright:hover {
+	color: red;
 }
 </style>
 <meta charset="utf-8">
@@ -146,24 +199,32 @@ window.addEventListener("load", function(evt) {
             print("RESPONSE: " + evt.data);
 			if (evt.data == "SUCCESSFUL_AUTHENTIFICATION"){
 
+
 				var showChannels = document.createElement("div");
 				showChannels.setAttribute("id","showChannels");
 				showChannels.setAttribute("class","showChannels");
-
+				
 
 
 				document.getElementById("content").appendChild(showChannels);
 				var tabs = document.createElement("div");
-				tabs.setAttribute("id","tabs");
-				tabs.setAttribute("class","tabs");
-				tabs.innerHTML = '<button onclick="showListChannels()">List of Channels</button>';
-				
+				tabs.setAttribute("id","tab");
+				tabs.setAttribute("class","tab");
+				tabs.innerHTML = tabs.innerHTML + '<button class="tablinks" onclick="showListChannels(event)" id="defaultOpen">List of Channels</button>'
 
-
-
-
-
+				tabs.innerHTML = tabs.innerHTML + '<button class="tablinks" onclick="openChannel(event,\'Filosofia\')">London</button>'
 				document.getElementById("showChannels").appendChild(tabs);
+
+				var contentTab = document.createElement("div");
+				contentTab.setAttribute("id","contentTab");
+				contentTab.setAttribute("class","tabcontent");
+				document.getElementById("showChannels").appendChild(contentTab);
+
+				contentTab.innerHTML = "<h3>List Channels</h3>";
+
+				//document.getElementById("showChannels").appendChild(contentListChannels);
+
+
 			}
         }
         ws.onerror = function(evt) {
@@ -192,6 +253,9 @@ window.addEventListener("load", function(evt) {
     };
 
 });
+
+
+
 </script>
 </head>
 <body>
