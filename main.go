@@ -76,20 +76,31 @@ body{
   width: 100%;
   margin: 0;
 }
-#channels {
-	width:100%;
-	height: 100%;
-	background-color:brown;
-}
-#showChannels{
-	background-color:yellow;
-	height: 100%;
+.content{
+	height:100%;
 	width: 100%;
-	bottom: 10;
-	right: 10;
-	position:fixed;
+}
+.elements{
+	width: 100%;
+	height: 100%;
 }
 
+.userList{
+	width: 20%;
+	height: 100%;
+	background-color: blue;
+	position: absolute;
+		left:0;
+		right:0;
+}
+.textArea {
+	width: 80%;
+	height:100%;
+	background-color: red;
+	position: absolute;
+			left:20%;
+		right:0;
+}
 /* Style the tab */
 .tab {
   overflow: hidden;
@@ -200,30 +211,20 @@ window.addEventListener("load", function(evt) {
 			if (evt.data == "SUCCESSFUL_AUTHENTIFICATION"){
 
 
-				var showChannels = document.createElement("div");
-				showChannels.setAttribute("id","showChannels");
-				showChannels.setAttribute("class","showChannels");
-				
 
-
-				document.getElementById("content").appendChild(showChannels);
 				var tabs = document.createElement("div");
 				tabs.setAttribute("id","tab");
 				tabs.setAttribute("class","tab");
 				tabs.innerHTML = tabs.innerHTML + '<button class="tablinks" onclick="showListChannels(event)" id="defaultOpen">List of Channels</button>'
 
-				tabs.innerHTML = tabs.innerHTML + '<button class="tablinks" onclick="openChannel(event,\'Filosofia\')">London</button>'
-				document.getElementById("showChannels").appendChild(tabs);
+				document.getElementById("content").appendChild(tabs);
+				var elements = document.createElement("div");
+				elements.setAttribute("id","elements");
+				elements.setAttribute("class","elements");
+				
 
-				var contentTab = document.createElement("div");
-				contentTab.setAttribute("id","contentTab");
-				contentTab.setAttribute("class","tabcontent");
-				document.getElementById("showChannels").appendChild(contentTab);
 
-				contentTab.innerHTML = "<h3>List Channels</h3>";
-
-				//document.getElementById("showChannels").appendChild(contentListChannels);
-
+				document.getElementById("content").appendChild(elements);
 
 			}
         }
