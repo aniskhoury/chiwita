@@ -17,23 +17,29 @@ import (
 )
 
 func ListUsersChannel(w http.ResponseWriter, r *http.Request) {
-	mapResult := make(map[string]interface{})
 	var templateListUsersChannel, err = template.ParseFiles("templates/listUsersChannel.template")
 	if err != nil {
 		fmt.Print("Error al leer la plantilla")
 	}
 	global.MutexChannels.Lock()
 	channel, exist := global.Channels[r.FormValue("channel")]
+
+	mapResult := make(map[string]interface{})
+
+	mapUsers := make([]map[string]interface{}, 0, 0)
+
 	if exist {
 		for k, _ := range channel.Users {
-			mapResult[k] = ""
+			var element = make(map[string]interface{})
+
+			element["nick"] = k
+
+			mapUsers = append(mapUsers, element)
 		}
-	} else {
-		mapResult["error"] = "ERROR_CHANNEL_DOESNT_EXIST"
 	}
 	global.MutexChannels.Unlock()
 
-	b, _ := json.Marshal(mapResult)
+	b, _ := json.Marshal(mapUsers)
 	mapResult["result"] = string(b)
 
 	templateListUsersChannel.Execute(w, mapResult)

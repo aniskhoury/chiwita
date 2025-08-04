@@ -1,30 +1,55 @@
-
-function openChannel(evt,nameChannel){
-        $(".userList").innerHTML = "hola";
+function hideAllElements(){
         $(".userList").hide();
         $(".textArea").hide();
-        var content = document.getElementById("channellist") ;
         $(".channelList").hide();
+        $(".inputText").hide();
+}
+function openChannel(evt,nameChannel){
+
+        hideAllElements();
 
         if (document.getElementById("userList"+nameChannel)==null){
-
+            
             document.getElementById("tab").innerHTML = document.getElementById("tab").innerHTML+ '<button id = "'+nameChannel+'" class="tablinks" onclick="openChannel(event,\''+nameChannel+'\')">'+nameChannel+'</button>';
 
             var userList = document.createElement("div");
             var textArea = document.createElement("div");
+            var inputText = document.createElement("input");
 
             userList.setAttribute("id","userList"+nameChannel);
             textArea.setAttribute("id","textArea"+nameChannel);
+            inputText.setAttribute("id","inputText"+nameChannel);
             userList.setAttribute("class","userList");
             textArea.setAttribute("class","textArea");
-
+            inputText.setAttribute("class","inputText");
             document.getElementById("elements").appendChild(userList);
             document.getElementById("elements").appendChild(textArea);
-            //userList.style = "background-color:blue";
-            //textArea.style = "background-color:red";
+            document.getElementById("elements").appendChild(inputText);
+            
+            $.ajax({
+                url: "listUsersChannel?channel="+nameChannel,
+                dataType: 'application/json',
+                complete: function(data){
+                        var result = data.responseText;
+                            result = result.replaceAll('&#34;','"');
+                            var resultJSON = JSON.parse(result);
+                            var resultUsers = "";
+                            for (var i =0;i<resultJSON.length;i++){
+                                resultUsers = resultUsers + resultJSON[i]["nick"] + "<br>";
+                            }
+                            userList.innerHTML = resultUsers;
+                },
+                success: function(data){
+                    console.log(data)
+                }
+            })
+
+
+            
         }else{
             $("#userList"+nameChannel).show();
             $("#textArea"+nameChannel).show();
+            $("#inputText"+nameChannel).show();
         }
  
 
@@ -48,10 +73,7 @@ function showListChannels(event){
         url: '/listChannels',
     dataType: 'application/json',
     complete: function(data){
-        $(".userList").innerHTML = "hola";
-        $(".userList").hide();
-        $(".textArea").hide();
-        $(".channelList").hide();
+        hideAllElements();
 
         var result = data.responseText;
         result = result.replaceAll('&#34;','"');

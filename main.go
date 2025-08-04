@@ -75,6 +75,7 @@ body{
   height: 100%;
   width: 100%;
   margin: 0;
+  overflow: hidden; /* Hide scrollbars */
 }
 .content{
 	height:100%;
@@ -84,7 +85,13 @@ body{
 	width: 100%;
 	height: 100%;
 }
-
+.inputText{
+	width: 80%;
+	height: 10%;
+	position:absolute;
+	left:20%;
+	bottom:0%;
+}
 .userList{
 	width: 20%;
 	height: 100%;
